@@ -1,0 +1,64 @@
+name: "Test"
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        kongVersion:
+        - "2.3.x"
+        - "2.8.x"
+        - "3.0.x"
+        - "dev"
+        - "3.0.0.x"
+        - "dev-ee"
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Clone kong-pongo
+      run: git clone https://github.com/nawaz1991/kong-pongo.git
+
+    - name: Setup env
+      run: |
+        PATH=$PATH:~/.local/bin
+        mkdir -p ~/.local/bin
+        ln -s $(realpath kong-pongo/pongo.sh) ~/.local/bin/pongo
+
+    - run: pongo run -- --coverage
+
+    # Optional upload of coverage data,
+    # just ugly, something to fix...
+    - uses: leafo/gh-actions-lua@v10
+      if: success()
+    - uses: leafo/gh-actions-luarocks@v4
+      if: success()
+    - name: Report test coverage
+      if: success()
+      continue-on-error: true
+      run: |
+        luarocks install luacov-coveralls
+        # hack: luacov config file has a path for inside the pongo container
+        # rewrite those to the local location in GHA
+        if [ -f .luacov ]; then
+          cp .luacov .luacov_backup
+          cat .luacov_backup | sed 's/\/kong-plugin\/luacov./luacov./' > .luacov
+        fi
+        
+        rm *.report.out
+        luacov-coveralls
+        #luacov-coveralls --output coveralls.out
+        # undo the hack
+        if [ -f .luacov_backup ]; then
+          mv .luacov_backup .luacov
+        fi
+      env:
+        COVERALLS_REPO_TOKEN: ${{ github.token }}
