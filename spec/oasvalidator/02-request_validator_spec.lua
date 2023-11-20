@@ -68,6 +68,7 @@ for _, strategy in helpers.all_strategies() do if strategy ~= "cassandra" then
       end)
     end)
 
+    -- Invalid path param
     describe("invalid path", function()
       it("An invalid test request", function()
         local r = client:get("/invalid/path", {
@@ -96,6 +97,41 @@ for _, strategy in helpers.all_strategies() do if strategy ~= "cassandra" then
         local body = assert.res_status(400, r)
         local json = cjson.decode(body)
         assert.equal("INVALID_QUERY_PARAM", json["errorCode"])
+      end)
+    end)
+
+    -- Invalid header
+    describe("invalid header", function()
+      it("An invalid test request", function()
+        local r = client:get("/test/header_single1", {
+          headers = {
+            host = "test1.com",
+            intHeader = "not_a_num"
+          }
+        })
+        -- validate that the request is unsuccessful, response status 400
+        assert.response(r).has.status(400)
+        local body = assert.res_status(400, r)
+        local json = cjson.decode(body)
+        assert.equal("INVALID_HEADER_PARAM", json["errorCode"])
+      end)
+    end)
+
+    -- Invalid body
+    describe("invalid body", function()
+      it("An invalid test request", function()
+        local r = client:post("/test/all/123/abc/str1,str2/field1,0,field2,string?param4=string1&param4=string2&param5=field1,0,field2,string&param6=field1,0,field2,string&param7=field1,0,field2,string&param8=field1,0,field2,string&param9=field1,0,field2,string&param10=false",
+                 {
+          headers = {
+            host = "test1.com"
+          },
+          body = "{\"field1\":123,\"field2\":\"abc\",\"field3\":[\"abc\",\"def\"],\"field4\":{\"subfield1\":123,\"subfield2\":\"abc\"},\"field5\":{\"subfield1\":123},\"field6\":true,\"field7\":[123,456],\"field8\":[123,456],\"field9\":\"abc\",\"field10\":\"option1\",\"field11\":{\"field\":123},\"field12\":[{\"name\":\"abc\"},{\"name\":\"def\"}]}"
+        })
+        -- validate that the request is unsuccessful, response status 400
+        assert.response(r).has.status(400)
+        local body = assert.res_status(400, r)
+        local json = cjson.decode(body)
+        assert.equal("INVALID_BODY", json["errorCode"])
       end)
     end)
 
