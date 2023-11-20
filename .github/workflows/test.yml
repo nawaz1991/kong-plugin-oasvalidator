@@ -14,12 +14,14 @@ jobs:
       fail-fast: false
       matrix:
         kongVersion:
+        - "2.0.x"
         - "2.3.x"
         - "2.8.x"
         - "3.0.x"
         - "dev"
         - "3.0.0.x"
         - "dev-ee"
+        - "3.5.x"
 
     steps:
     - uses: actions/checkout@v4
